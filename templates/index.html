@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facial Sentiment Reader</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #2d3748;
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 2rem;
+            margin: 1rem 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .result-container {
+            margin-top: 2rem;
+            padding: 1rem;
+            border-radius: 10px;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .prediction {
+            font-size: 1.5rem;
+            color: #2d3748;
+            margin: 1rem 0;
+            font-weight: 500;
+        }
+
+        .preview-image {
+            max-width: 300px;
+            border-radius: 10px;
+            margin: 1rem 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .emotion-icon {
+            font-size: 2rem;
+            margin: 1rem 0;
+        }
+
+        /* Emotion-specific colors */
+        .happy { color: #48bb78; }
+        .sad { color: #4299e1; }
+        .angry { color: #f56565; }
+        .surprise { color: #ed8936; }
+        .fear { color: #9f7aea; }
+        .disgust { color: #38a169; }
+        .neutral { color: #718096; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2><i class="fas fa-smile"></i> Facial Sentiment Reader</h2>
+        <form method="POST" enctype="multipart/form-data">
+            <div class="upload-area" onclick="document.getElementById('image-input').click()">
+                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                <p>Click to upload an image</p>
+                <input type="file" name="image" id="image-input" class="file-input" required onchange="this.form.submit()">
+            </div>
+            <button type="submit" class="upload-btn">
+                <i class="fas fa-magic"></i> Predict Sentiment Analysis
+            </button>
+        </form>
+
+        {% if prediction %}
+            <div class="result-container">
+                <div class="emotion-icon {{ prediction.lower() }}">
+                    {% if prediction == 'Happy' %}
+                        <i class="fas fa-laugh-beam"></i>
+                    {% elif prediction == 'Sad' %}
+                        <i class="fas fa-sad-tear"></i>
+                    {% elif prediction == 'Angry' %}
+                        <i class="fas fa-angry"></i>
+                    {% elif prediction == 'Surprise' %}
+                        <i class="fas fa-surprise"></i>
+                    {% elif prediction == 'Fear' %}
+                        <i class="fas fa-fearful"></i>
+                    {% elif prediction == 'Disgust' %}
+                        <i class="fas fa-grimace"></i>
+                    {% else %}
+                        <i class="fas fa-meh"></i>
+                    {% endif %}
+                </div>
+                <h3 class="prediction">Sentiment Analysis: {{ prediction }}</h3>
+                <img src="{{ url_for('static', filename='uploads/' + filename) }}" class="preview-image" alt="Uploaded image">
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Add drag and drop functionality
+        const uploadArea = document.querySelector('.upload-area');
+        const fileInput = document.getElementById('image-input');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            uploadArea.classList.add('highlight');
+        }
+
+        function unhighlight(e) {
+            uploadArea.classList.remove('highlight');
+        }
+
+        uploadArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            fileInput.form.submit();
+        }
+    </script>
+</body>
+</html>
