@@ -1,0 +1,6 @@
+flask>=2.0.1
+pandas>=1.5.0
+numpy>=1.21.0
+scikit-learn>=1.0.0
+tensorflow>=2.10.0   # agar model TensorFlow se bana hai
+gunicorn>=20.1.0
